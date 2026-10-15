@@ -1,23 +1,24 @@
-const TIP_FEE = 0.3;
+// view-payment.js
+const DONATION_RATE = 0.15;
 
 function roundToCents(amount) {
   return Math.round(amount * 100) / 100;
 }
 
-function pickRandomVeteran() {
-  return VETERANS[Math.floor(Math.random() * VETERANS.length)];
-}
-
-function renderPayment(vet) {
-  const targetVet = vet || pickRandomVeteran();
-
+function renderPayment() {
   const content = document.getElementById("payment-content");
+
+  if (!CURRENT_VET) {
+    content.innerHTML = "<p>We're choosing this period's vet &mdash; check back soon.</p>";
+    return;
+  }
+
   content.innerHTML =
     '<div class="payment-vet-summary">' +
-      avatarMarkup(targetVet.id, "avatar") +
+      avatarMarkup(CURRENT_VET.id, "avatar") +
       '<div>' +
-        '<h2 class="veteran-name">' + targetVet.name + '</h2>' +
-        '<p class="veteran-meta">' + targetVet.branch + ' &middot; ' + targetVet.era + '</p>' +
+        '<h2 class="veteran-name">' + escapeHtml(CURRENT_VET.name) + '</h2>' +
+        '<p class="veteran-meta">' + escapeHtml(CURRENT_VET.branch) + ' &middot; ' + escapeHtml(CURRENT_VET.era) + '</p>' +
       '</div>' +
     '</div>' +
     '<div class="amount-entry">' +
@@ -31,9 +32,16 @@ function renderPayment(vet) {
         '<button type="button" class="amount-chip" data-amount="10">$10</button>' +
         '<button type="button" class="amount-chip" data-amount="20">$20</button>' +
       '</div>' +
+      '<div class="donation-row">' +
+        '<label>' +
+          '<input type="checkbox" id="donation-checkbox" checked>' +
+          ' Also chip in <span id="donation-amount-display"></span> to support Tip a Vet' +
+        '</label>' +
+        '<input type="number" id="donation-amount-input" min="0" step="0.01">' +
+      '</div>' +
       '<div class="fee-breakdown">' +
-        '<div class="fee-row"><span>You send</span><span id="fee-amount"></span></div>' +
-        '<div class="fee-row"><span>Processing fee</span><span id="fee-fee"></span></div>' +
+        '<div class="fee-row"><span>Vet gets</span><span id="fee-amount"></span></div>' +
+        '<div class="fee-row"><span>Support Tip a Vet</span><span id="fee-fee"></span></div>' +
         '<div class="fee-row fee-total"><span>Total</span><span id="fee-total"></span></div>' +
       '</div>' +
       '<div class="note-field">' +
@@ -43,16 +51,18 @@ function renderPayment(vet) {
     '</div>' +
     '<button type="button" id="send-button" class="confirm-button">Send</button>';
 
-  setUpPaymentFlow(targetVet);
+  setUpPaymentFlow(CURRENT_VET);
 }
 
-function updateFeeBreakdown(amount) {
+function updateFeeBreakdown(amount, donationAmount, donationChecked) {
   const valid = amount && amount > 0;
-  const total = valid ? amount + TIP_FEE : 0;
+  const effectiveDonation = donationChecked ? donationAmount : 0;
+  const total = valid ? amount + effectiveDonation : 0;
 
   document.getElementById("fee-amount").textContent = valid ? formatCurrency(amount) : formatCurrency(0);
-  document.getElementById("fee-fee").textContent = "+" + formatCurrency(TIP_FEE);
+  document.getElementById("fee-fee").textContent = "+" + formatCurrency(effectiveDonation);
   document.getElementById("fee-total").textContent = valid ? formatCurrency(total) : formatCurrency(0);
+  document.getElementById("donation-amount-display").textContent = formatCurrency(donationAmount);
 
   const sendButton = document.getElementById("send-button");
   sendButton.textContent = valid ? "Send " + formatCurrency(total) : "Send";
@@ -62,8 +72,12 @@ function updateFeeBreakdown(amount) {
 function setUpPaymentFlow(vet) {
   const amountInput = document.getElementById("amount-input");
   const chips = document.querySelectorAll(".amount-chip");
+  const donationCheckbox = document.getElementById("donation-checkbox");
+  const donationInput = document.getElementById("donation-amount-input");
   const noteInput = document.getElementById("tip-note");
   const sendButton = document.getElementById("send-button");
+
+  let donationManuallyEdited = false;
 
   function selectChipFor(amount) {
     chips.forEach(function (chip) {
@@ -71,41 +85,44 @@ function setUpPaymentFlow(vet) {
     });
   }
 
-  selectChipFor(roundToCents(Number(amountInput.value)));
-  updateFeeBreakdown(roundToCents(Number(amountInput.value)));
+  function currentDonationAmount(tipAmount) {
+    if (donationManuallyEdited) {
+      return roundToCents(Number(donationInput.value) || 0);
+    }
+    return roundToCents(tipAmount * DONATION_RATE);
+  }
+
+  function refresh() {
+    const amount = roundToCents(Number(amountInput.value));
+    const donationAmount = currentDonationAmount(amount);
+    donationInput.value = donationAmount;
+    selectChipFor(amount);
+    updateFeeBreakdown(amount, donationAmount, donationCheckbox.checked);
+  }
+
+  refresh();
 
   chips.forEach(function (chip) {
     chip.addEventListener("click", function () {
-      const amount = Number(chip.dataset.amount);
-      amountInput.value = amount;
-      selectChipFor(amount);
-      updateFeeBreakdown(amount);
+      amountInput.value = Number(chip.dataset.amount);
+      refresh();
     });
   });
 
-  amountInput.addEventListener("input", function () {
-    const amount = roundToCents(Number(amountInput.value));
-    selectChipFor(amount);
-    updateFeeBreakdown(amount);
+  amountInput.addEventListener("input", refresh);
+
+  donationInput.addEventListener("input", function () {
+    donationManuallyEdited = true;
+    refresh();
   });
+
+  donationCheckbox.addEventListener("change", refresh);
 
   sendButton.addEventListener("click", function () {
     const amount = roundToCents(Number(amountInput.value));
     if (!amount || amount <= 0) {
       return;
     }
-
-    sendTip(vet.id, amount);
-    const note = noteInput.value.trim();
-
-    const content = document.getElementById("payment-content");
-    content.innerHTML =
-      '<div class="payment-success-panel">' +
-        avatarMarkup(vet.id, "avatar-large") +
-        '<h2>Sent! 🎉</h2>' +
-        '<p>' + vet.name + ' just got ' + formatCurrency(amount) + ' from you' +
-        (note ? ' &mdash; &ldquo;' + escapeHtml(note) + '&rdquo;' : '') + '.</p>' +
-        '<a class="confirm-button payment-link" href="#/vets/' + vet.id + '">Back to profile</a>' +
-      '</div>';
+    // Checkout wiring added in Task 5.
   });
 }

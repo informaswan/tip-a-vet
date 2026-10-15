@@ -8,7 +8,7 @@ function router() {
   const hash = window.location.hash;
 
   if (hash === "#/tip") {
-    renderPayment(null);
+    renderPayment();
     showView("payment-view");
     return;
   }
