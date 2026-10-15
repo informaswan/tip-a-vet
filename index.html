@@ -12,8 +12,6 @@
     <a href="#/" class="brand"><h1><span class="brand-star">&#9733;</span>Tip a Vet</h1></a>
     <button type="button" id="nav-toggle" class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">&#9776;</button>
     <nav id="site-nav" class="site-nav">
-      <a href="#/vets">Browse Vets</a>
-      <a href="#/submit">Add a Vet</a>
       <a href="#/served">Vets We've Tipped</a>
       <a href="#/tip" class="nav-tip-button">Tip a Vet a Buck</a>
     </nav>
@@ -25,30 +23,9 @@
     <div id="home-content"></div>
   </section>
 
-  <section id="directory-view" class="view" hidden>
-    <div class="page-heading">
-      <h2>Browse Veterans</h2>
-      <p>Pick someone to send a few bucks to.</p>
-    </div>
-    <div id="veteran-grid" class="veteran-grid"></div>
-  </section>
-
-  <section id="profile-view" class="view" hidden>
-    <button type="button" id="back-button" class="back-button">&larr; Back to Directory</button>
-    <div id="profile-content" class="profile-content"></div>
-  </section>
-
   <section id="payment-view" class="view" hidden>
     <button type="button" id="payment-back-button" class="back-button">&larr; Back</button>
     <div id="payment-content" class="payment-content"></div>
-  </section>
-
-  <section id="submit-view" class="view" hidden>
-    <div class="page-heading">
-      <h2>Add a Vet</h2>
-      <p>Know a vet who deserves a few bucks? Add them to the list.</p>
-    </div>
-    <div id="submit-content" class="profile-content"></div>
   </section>
 
   <section id="served-view" class="view" hidden>
@@ -64,10 +41,7 @@
 <script src="data.js"></script>
 <script src="avatars.js"></script>
 <script src="router.js"></script>
-<script src="view-directory.js"></script>
-<script src="view-profile.js"></script>
 <script src="view-payment.js"></script>
-<script src="view-submit.js"></script>
 <script src="view-served.js"></script>
 <script src="view-home.js"></script>
 <script src="app.js"></script>

@@ -1,38 +1,42 @@
+// view-home.js
 function renderHome() {
   const container = document.getElementById("home-content");
-  const featured = VETERANS.slice(0, 3);
+
+  if (!CURRENT_VET) {
+    container.innerHTML =
+      '<section class="hero">' +
+        '<h2>Every veteran deserves to be seen.</h2>' +
+        '<p class="hero-copy">' +
+          'Each period, our board of five chooses one veteran we believe critically needs help right now &mdash; ' +
+          '100% of your tip goes straight to them. We never touch the money.' +
+        '</p>' +
+        '<p class="hero-copy">We&rsquo;re choosing this period&rsquo;s vet &mdash; check back soon.</p>' +
+      '</section>';
+    return;
+  }
 
   container.innerHTML =
     '<section class="hero">' +
       '<h2>Every veteran deserves to be seen.</h2>' +
       '<p class="hero-copy">' +
-        'Send a vet a few bucks. Straight from you to them &mdash; ' +
-        'no middleman, just a small processing fee.' +
+        'Each period, our board of five chooses one veteran we believe critically needs help right now &mdash; ' +
+        '100% of your tip goes straight to them. We never touch the money.' +
       '</p>' +
       '<a href="#/tip" class="confirm-button hero-cta">Tip a Vet a Buck</a>' +
     '</section>' +
-    '<section class="how-it-works">' +
-      '<div class="how-step">' +
-        '<h3><span class="star-bullet">&#9733;</span>Find a vet</h3>' +
-        '<p>Browse a few names and pick someone.</p>' +
-      '</div>' +
-      '<div class="how-step">' +
-        '<h3><span class="star-bullet">&#9733;</span>Send a tip</h3>' +
-        '<p>Choose an amount, as little as a dollar.</p>' +
-      '</div>' +
-      '<div class="how-step">' +
-        '<h3><span class="star-bullet">&#9733;</span>It goes straight to them</h3>' +
-        '<p>Minus a small processing fee.</p>' +
-      '</div>' +
-    '</section>' +
     '<section class="featured-vets">' +
-      '<h3>Meet a few of the vets</h3>' +
-      '<div class="veteran-grid" id="featured-grid"></div>' +
-      '<a href="#/vets" class="see-all-link">See all vets &rarr;</a>' +
+      '<h3>This period&rsquo;s vet</h3>' +
+      '<div class="profile-content" id="current-vet-content"></div>' +
     '</section>';
 
-  const featuredGrid = document.getElementById("featured-grid");
-  featured.forEach(function (vet) {
-    featuredGrid.appendChild(buildVeteranCard(vet));
-  });
+  document.getElementById("current-vet-content").innerHTML =
+    '<div class="profile-header-row">' +
+      avatarMarkup(CURRENT_VET.id, "avatar-large") +
+      '<div>' +
+        '<h2 class="veteran-name">' + escapeHtml(CURRENT_VET.name) + '</h2>' +
+        '<p class="veteran-meta">' + escapeHtml(CURRENT_VET.branch) + ' &middot; ' + escapeHtml(CURRENT_VET.era) + '</p>' +
+      '</div>' +
+    '</div>' +
+    '<p class="veteran-bio">' + escapeHtml(CURRENT_VET.bio) + '</p>' +
+    '<a class="confirm-button" href="#/tip">Send $</a>';
 }
