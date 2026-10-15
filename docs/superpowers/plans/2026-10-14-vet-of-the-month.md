@@ -1,5 +1,11 @@
 # Vet of the Month Implementation Plan
 
+> **Superseded — do not execute.** This plan's Supabase backend was
+> reconsidered as overkill before any task was dispatched (Task 1 was
+> blocked on manual Supabase login/project-creation and never completed).
+> See `docs/superpowers/plans/2026-10-14-lean-vet-of-the-month.md` for the
+> plan that replaced this one.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Turn Tip a Vet from a static front-end mockup into a real product where one veteran at a time — picked by a board of five as whoever most critically needs help right now — receives all tipping traffic via a direct, non-custodial Venmo/PayPal/Cash App hand-off, with past picks shown in a "Past Vets" history. Tip a Vet earns revenue only through a separate, optional, Stripe-charged "support Tip a Vet" donation.
@@ -1230,7 +1236,7 @@ window.addEventListener("hashchange", router);
 window.addEventListener("DOMContentLoaded", router);
 ```
 
-(`renderPayment()` taking no argument and `renderServedVets()` staying the same name are both addressed by Tasks 10 and 9's remaining steps respectively — this step just removes the dead routes.)
+(`renderPayment()` losing its argument is Task 11's job, and `renderServedVets()` is reworked in Task 10 — this step only removes the dead directory/profile routes; the `#/tip` and `#/served` blocks above are left as-is for those tasks to pick up.)
 
 - [ ] **Step 4: Update `index.html`**
 

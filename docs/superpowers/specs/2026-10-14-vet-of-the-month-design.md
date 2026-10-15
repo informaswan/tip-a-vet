@@ -1,5 +1,12 @@
 # Tip a Vet — Vet of the Month Design
 
+> **Superseded:** the backend architecture here (Supabase: Postgres, Auth,
+> Storage, Edge Functions) was reconsidered as overkill for how this project
+> actually runs — see
+> `docs/superpowers/specs/2026-10-14-lean-vet-of-the-month-design.md`. The
+> product decisions below (one featured vet at a time, board decides
+> off-platform, Past Vets history) still hold; only the backend changed.
+
 ## Overview
 
 This supersedes **Components items 3–4** (public directory/profile, payment
