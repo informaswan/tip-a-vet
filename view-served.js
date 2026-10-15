@@ -1,16 +1,20 @@
+// view-served.js
 function renderServedVets() {
   const grid = document.getElementById("served-grid");
   grid.innerHTML = "";
 
-  SERVED_VETERANS.forEach(function (vet) {
+  if (PAST_VETS.length === 0) {
+    grid.innerHTML = "<p>No past vets yet &mdash; this period's vet is still active.</p>";
+    return;
+  }
+
+  PAST_VETS.forEach(function (vet) {
     const card = document.createElement("div");
     card.className = "veteran-card served-card";
     card.innerHTML =
       avatarMarkup(vet.id, "avatar") +
-      '<h2 class="veteran-name">' + vet.name + '</h2>' +
-      '<p class="veteran-meta">' + vet.branch + ' &middot; ' + vet.era + '</p>' +
-      '<p class="served-outcome">' + vet.outcomeBlurb + '</p>' +
-      '<p class="veteran-total">' + formatCurrency(vet.totalReceived) + ' received</p>';
+      '<h2 class="veteran-name">' + escapeHtml(vet.name) + '</h2>' +
+      '<p class="veteran-meta">' + escapeHtml(vet.branch) + ' &middot; ' + escapeHtml(vet.era) + '</p>';
     grid.appendChild(card);
   });
 }
