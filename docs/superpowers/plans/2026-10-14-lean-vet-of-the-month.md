@@ -811,7 +811,15 @@ fetch("http://127.0.0.1:8787/create-donation-session", {
 
 Expected: resolves with `{url: "https://checkout.stripe.com/..."}`, no CORS error in the console. Then temporarily change `window.location` to simulate a disallowed origin is impractical locally — instead, confirm the deployed Worker (Step 7) rejects a request with no matching `Origin` header by checking the response falls back to the first allowed origin rather than echoing an arbitrary one (re-read `corsHeaders` — it never reflects an arbitrary origin back, which is the actual security property to confirm, not just "it works from localhost").
 
-- [ ] **Step 6: Deploy**
+- [ ] **Step 6: Log in to Cloudflare, then deploy**
+
+Deploying (as opposed to local `wrangler dev`) requires a Cloudflare account and an authenticated `wrangler` session:
+
+```bash
+npx wrangler login
+```
+
+This opens a browser to authorize the CLI — this step needs a human, not a subagent, since it's an interactive OAuth approval with no way to script around it. If you're running this as an agent and aren't authenticated yet, stop here and ask your human partner to run this command themselves and approve it in their browser, then resume.
 
 ```bash
 npx wrangler secret put STRIPE_SECRET_KEY
