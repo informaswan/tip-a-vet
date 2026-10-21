@@ -690,6 +690,15 @@ main = "src/index.js"
 compatibility_date = "2024-01-01"
 ```
 
+```
+# donation-worker/.gitignore
+.dev.vars
+.wrangler/
+node_modules/
+```
+
+Step 4 uses a local `.dev.vars` file to hold the Stripe secret for `wrangler dev` — this `.gitignore` must exist before that file is ever created, so it never gets committed by accident.
+
 - [ ] **Step 3: Write the Worker**
 
 ```js
@@ -778,10 +787,13 @@ Replace `https://informaswan.github.io` above with the actual GitHub Pages origi
 
 ```bash
 cd donation-worker
-npx wrangler secret put STRIPE_SECRET_KEY --local
 ```
 
-Paste the `sk_test_...` key from Step 1 when prompted.
+Modern `wrangler` (confirmed on 4.86.0; `wrangler secret put ... --local` no longer exists) uses a `.dev.vars` file for local secrets instead. `donation-worker/.gitignore` already excludes it (added alongside this plan correction — Task 6's own scaffolding step predates this fix and didn't create one). Create `donation-worker/.dev.vars`:
+
+```
+STRIPE_SECRET_KEY=sk_test_your_key_here
+```
 
 ```bash
 npx wrangler dev
