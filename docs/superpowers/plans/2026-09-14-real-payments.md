@@ -1,5 +1,10 @@
 # Real Payments & Vet Onboarding Implementation Plan
 
+> **Superseded — do not execute.** This plan's Supabase backend was never
+> implemented (only `supabase init` scaffolding) and was reconsidered as
+> overkill. See `docs/superpowers/plans/2026-10-14-lean-vet-of-the-month.md`
+> for the plan that replaced it.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Turn Tip a Vet from a static front-end mockup into a real product: vets onboard with a linked Venmo/PayPal/Cash App handle and get manually verified, tippers send the vet's tip directly through that service (Tip a Vet never touches it), and Tip a Vet earns revenue only through a separate, optional, Stripe-charged "support Tip a Vet" donation.

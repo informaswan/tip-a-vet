@@ -1,5 +1,11 @@
 # Tip a Vet — Real Payments & Vet Onboarding Design
 
+> **Superseded:** the Supabase-based backend here was reconsidered as
+> overkill — see
+> `docs/superpowers/specs/2026-10-14-lean-vet-of-the-month-design.md`.
+> This doc's non-custodial Venmo/PayPal/Cash App hand-off model still
+> informs the current design; the backend it was built on does not.
+
 ## Overview
 
 Prior specs (`2026-07-20`, `2026-07-23`, `2026-08-15`) explicitly scoped
