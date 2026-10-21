@@ -66,7 +66,12 @@ export default {
       body: params.toString(),
     });
 
-    const session = await stripeResponse.json();
+    let session;
+    try {
+      session = await stripeResponse.json();
+    } catch (error) {
+      return jsonResponse({ error: "Stripe returned an unreadable response" }, 500, origin);
+    }
 
     if (!stripeResponse.ok) {
       return jsonResponse({ error: session.error ? session.error.message : "Stripe error" }, 500, origin);

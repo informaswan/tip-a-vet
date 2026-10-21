@@ -693,6 +693,7 @@ compatibility_date = "2024-01-01"
 ```
 # donation-worker/.gitignore
 .dev.vars
+.dev.vars.*
 .wrangler/
 node_modules/
 ```
