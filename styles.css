@@ -266,6 +266,34 @@ body {
   color: var(--color-bg);
 }
 
+.donation-row {
+  margin-bottom: 1.25rem;
+}
+
+.donation-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.donation-row input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+}
+
+.donation-row input[type="number"] {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-tan);
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  background-color: var(--color-bg);
+}
+
 .fee-breakdown {
   background-color: rgba(203, 184, 148, 0.2);
   border-radius: 0.75rem;

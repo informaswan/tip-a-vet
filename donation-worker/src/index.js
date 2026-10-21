@@ -48,6 +48,25 @@ export default {
       return jsonResponse({ error: "donationAmount and returnUrl are required" }, 400, origin);
     }
 
+    if (donationAmount < 0.5) {
+      return jsonResponse({ error: "donationAmount must be at least $0.50" }, 400, origin);
+    }
+
+    if (donationAmount > 500) {
+      return jsonResponse({ error: "donationAmount must be at most $500" }, 400, origin);
+    }
+
+    let returnUrlOrigin;
+    try {
+      returnUrlOrigin = new URL(returnUrl).origin;
+    } catch (error) {
+      return jsonResponse({ error: "returnUrl must be a valid URL" }, 400, origin);
+    }
+
+    if (!ALLOWED_ORIGINS.includes(returnUrlOrigin)) {
+      return jsonResponse({ error: "returnUrl must be on an allowed origin" }, 400, origin);
+    }
+
     const params = new URLSearchParams();
     params.set("mode", "payment");
     params.set("line_items[0][price_data][currency]", "usd");

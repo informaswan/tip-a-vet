@@ -19,6 +19,23 @@
 - `vet-data.js` is edited by hand, directly in git, by whoever is tracking the board's decision — no code in this plan writes to it.
 - The Worker's CORS headers must allow the deployed site's actual origins (the `github.io` domain and the custom domain `tip-a-vet.com`), not just `*` by accident of testing from `localhost`.
 
+## Going Live Checklist
+
+These steps are order-dependent and currently scattered across Task 6 and the hand-edit instructions for `vet-data.js`. Do them in this order:
+
+1. Create a real Stripe account and get the test secret key (Task 6, Step 1).
+2. Run `wrangler login` (Task 6, Step 6).
+3. Set the real `STRIPE_SECRET_KEY` via `wrangler secret put` (Task 6, Step 6).
+4. Run `wrangler deploy` (Task 6, Step 6).
+5. Update `config.js`'s `WORKER_URL` to the deployed Worker's real URL.
+6. Run a live Stripe test-mode round-trip **before** filling in `CURRENT_VET`. Cover:
+   - Tip amounts $1, $3, $3.34, and $10 — these exercise the $0.50 Stripe minimum handling (a $1 or $3 tip with the default 15% donation computes under $0.50 and should skip Stripe entirely; $3.34 and $10 should go through Stripe).
+   - A note containing `&` and an emoji.
+   - Confirm Stripe accepts a `success_url` containing a `#` fragment.
+7. Only after that round-trip passes, hand-edit `vet-data.js` to set a real `CURRENT_VET`. This is the step that makes the site live for real tippers, so it must come last.
+
+**Note:** merging to `master`/deploying via GitHub Pages will show the live site in whatever state `vet-data.js` is currently in, including the "check back soon" state if `CURRENT_VET` is still `null`. That's intended, not a bug.
+
 ## Review Focus
 
 - **`CURRENT_VET` is `null`** (before the board's first pick, or between picks) — the homepage and `#/tip` must show a "check back soon" state, not throw trying to read a property off `null`.

@@ -1,5 +1,6 @@
 // data.js
 function escapeHtml(str) {
+  str = str == null ? "" : String(str);
   var map = {
     "&": "&amp;",
     "<": "&lt;",

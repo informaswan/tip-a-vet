@@ -1,5 +1,6 @@
 // view-payment.js
 const DONATION_RATE = 0.15;
+const MIN_DONATION = 0.5;
 
 function roundToCents(amount) {
   return Math.round(amount * 100) / 100;
@@ -95,7 +96,9 @@ function setUpPaymentFlow(vet) {
   function refresh() {
     const amount = roundToCents(Number(amountInput.value));
     const donationAmount = currentDonationAmount(amount);
-    donationInput.value = donationAmount;
+    if (!donationManuallyEdited) {
+      donationInput.value = donationAmount;
+    }
     selectChipFor(amount);
     updateFeeBreakdown(amount, donationAmount, donationCheckbox.checked);
   }
@@ -124,7 +127,8 @@ function setUpPaymentFlow(vet) {
       return;
     }
 
-    const donationAmount = donationCheckbox.checked ? currentDonationAmount(amount) : 0;
+    const rawDonationAmount = donationCheckbox.checked ? currentDonationAmount(amount) : 0;
+    const donationAmount = rawDonationAmount >= MIN_DONATION ? rawDonationAmount : 0;
     const note = noteInput.value.trim();
 
     sendButton.disabled = true;
@@ -147,9 +151,12 @@ function setUpPaymentFlow(vet) {
           window.location.href = result.url;
         })
         .catch(function (error) {
-          sendButton.disabled = false;
-          sendButton.textContent = "Send";
-          alert("Checkout failed: " + error.message);
+          if (confirm("Donation checkout is unavailable right now. Continue and send your tip to " + vet.name + " without it?")) {
+            showHandoffScreen(vet, amount, note);
+          } else {
+            sendButton.disabled = false;
+            sendButton.textContent = "Send";
+          }
         });
     } else {
       showHandoffScreen(vet, amount, note);
