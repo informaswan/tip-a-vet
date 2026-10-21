@@ -123,6 +123,100 @@ function setUpPaymentFlow(vet) {
     if (!amount || amount <= 0) {
       return;
     }
-    // Checkout wiring added in Task 5.
+
+    const donationAmount = donationCheckbox.checked ? currentDonationAmount(amount) : 0;
+    const note = noteInput.value.trim();
+
+    sendButton.disabled = true;
+
+    if (donationAmount > 0) {
+      sendButton.textContent = "Redirecting to checkout…";
+      const returnUrl = window.location.origin + window.location.pathname +
+        "#/tip/complete?amount=" + encodeURIComponent(amount) + "&note=" + encodeURIComponent(note);
+
+      fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ donationAmount: donationAmount, returnUrl: returnUrl }),
+      })
+        .then(function (response) { return response.json(); })
+        .then(function (result) {
+          if (result.error) {
+            throw new Error(result.error);
+          }
+          window.location.href = result.url;
+        })
+        .catch(function (error) {
+          sendButton.disabled = false;
+          sendButton.textContent = "Send";
+          alert("Checkout failed: " + error.message);
+        });
+    } else {
+      showHandoffScreen(vet, amount, note);
+    }
   });
+}
+
+function venmoWebLink(handle, amount, note) {
+  return "https://venmo.com/" + encodeURIComponent(handle) +
+    "?txn=pay&amount=" + encodeURIComponent(amount) +
+    "&note=" + encodeURIComponent(note || "Tip a Vet");
+}
+
+function cashappWebLink(handle, amount) {
+  return "https://cash.app/$" + encodeURIComponent(handle) + "/" + encodeURIComponent(amount);
+}
+
+function paypalWebLink(handle, amount) {
+  return "https://paypal.me/" + encodeURIComponent(handle) + "/" + encodeURIComponent(amount);
+}
+
+function showHandoffScreen(vet, amount, note) {
+  const content = document.getElementById("payment-content");
+  let links = "";
+
+  if (vet.venmoHandle) {
+    links += '<a class="confirm-button payment-link" target="_blank" href="' + venmoWebLink(vet.venmoHandle, amount, note) + '">Open Venmo</a>';
+  }
+  if (vet.paypalHandle) {
+    links += '<a class="confirm-button payment-link" target="_blank" href="' + paypalWebLink(vet.paypalHandle, amount) + '">Open PayPal</a>';
+  }
+  if (vet.cashappHandle) {
+    links += '<a class="confirm-button payment-link" target="_blank" href="' + cashappWebLink(vet.cashappHandle, amount) + '">Open Cash App</a>';
+  }
+
+  content.innerHTML =
+    '<div class="payment-success-panel">' +
+      avatarMarkup(vet.id, "avatar-large") +
+      '<h2>Almost there</h2>' +
+      '<p>Send ' + formatCurrency(amount) + ' to ' + escapeHtml(vet.name) + ' using one of the links below.</p>' +
+      links +
+      '<button type="button" id="confirm-sent-button" class="confirm-button">I sent it</button>' +
+    '</div>';
+
+  document.getElementById("confirm-sent-button").addEventListener("click", function () {
+    content.innerHTML =
+      '<div class="payment-success-panel">' +
+        avatarMarkup(vet.id, "avatar-large") +
+        '<h2>Sent! 🎉</h2>' +
+        '<p>' + escapeHtml(vet.name) + ' just got ' + formatCurrency(amount) + ' from you' +
+        (note ? ' &mdash; &ldquo;' + escapeHtml(note) + '&rdquo;' : '') + '.</p>' +
+        '<a class="confirm-button payment-link" href="#/">Back home</a>' +
+      '</div>';
+  });
+}
+
+function renderPaymentComplete(queryString) {
+  const params = new URLSearchParams(queryString);
+  const amount = roundToCents(Number(params.get("amount")));
+  const note = params.get("note") || "";
+
+  const content = document.getElementById("payment-content");
+
+  if (!CURRENT_VET || !amount || amount <= 0) {
+    content.innerHTML = "<p>Something went wrong loading your tip.</p>";
+    return;
+  }
+
+  showHandoffScreen(CURRENT_VET, amount, note);
 }

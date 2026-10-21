@@ -7,6 +7,14 @@ function showView(viewId) {
 function router() {
   const hash = window.location.hash;
 
+  const paymentCompleteMatch = hash.match(/^#\/tip\/complete\?(.*)$/);
+
+  if (paymentCompleteMatch) {
+    renderPaymentComplete(paymentCompleteMatch[1]);
+    showView("payment-view");
+    return;
+  }
+
   if (hash === "#/tip") {
     renderPayment();
     showView("payment-view");
