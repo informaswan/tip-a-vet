@@ -5,6 +5,7 @@ function renderHome() {
   if (!CURRENT_VET) {
     container.innerHTML =
       '<section class="hero">' +
+        '<img class="hero-logo" src="logo.png" alt="Tip a Vet">' +
         '<h2>Every veteran deserves to be seen.</h2>' +
         '<p class="hero-copy">' +
           'Each period, our board of five chooses one veteran we believe critically needs help right now &mdash; ' +
@@ -17,6 +18,7 @@ function renderHome() {
 
   container.innerHTML =
     '<section class="hero">' +
+        '<img class="hero-logo" src="logo.png" alt="Tip a Vet">' +
       '<h2>Every veteran deserves to be seen.</h2>' +
       '<p class="hero-copy">' +
         'Each period, our board of five chooses one veteran we believe critically needs help right now &mdash; ' +
