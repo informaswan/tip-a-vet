@@ -9,7 +9,8 @@ function renderHome() {
         '<h2>Every veteran deserves to be seen.</h2>' +
         '<p class="hero-copy">' +
           'Each period, our board of five chooses one veteran we believe critically needs help right now &mdash; ' +
-          '100% of your tip goes straight to them. We never touch the money.' +
+          'We collect every tip and pay the full total to them when the period ends. ' +
+          'Card fees are the only thing taken out, and you can add a little to cover them so your whole tip reaches the veteran.' +
         '</p>' +
         '<p class="hero-copy">We&rsquo;re choosing this period&rsquo;s vet &mdash; check back soon.</p>' +
       '</section>';
@@ -22,7 +23,8 @@ function renderHome() {
       '<h2>Every veteran deserves to be seen.</h2>' +
       '<p class="hero-copy">' +
         'Each period, our board of five chooses one veteran we believe critically needs help right now &mdash; ' +
-        '100% of your tip goes straight to them. We never touch the money.' +
+        'We collect every tip and pay the full total to them when the period ends. ' +
+          'Card fees are the only thing taken out, and you can add a little to cover them so your whole tip reaches the veteran.' +
       '</p>' +
       '<a href="#/tip" class="confirm-button hero-cta">Tip a Vet a Buck</a>' +
     '</section>' +

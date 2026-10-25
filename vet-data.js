@@ -6,10 +6,7 @@ const CURRENT_VET = {
   branch: "U.S. Army",
   era: "Operation Iraqi Freedom, 2004–2007",
   bio: "James served two tours as a combat medic and now works part-time while recovering from service-related injuries. Our board selected him this period because of an upcoming medical expense that isn't covered by his benefits.",
-  avatarInitials: "JR",
-  venmoHandle: "James-R-Veteran",
-  paypalHandle: "JamesRVeteran",
-  cashappHandle: "JamesRVeteran"
+  avatarInitials: "JR"
 };
 
 // Most recently retired first.

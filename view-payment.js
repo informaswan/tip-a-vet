@@ -1,9 +1,42 @@
 // view-payment.js
-const DONATION_RATE = 0.15;
-const MIN_DONATION = 0.5;
+const MIN_TIP_CENTS = 100;
+const AID_RATE = 0.03;
 
-function roundToCents(amount) {
-  return Math.round(amount * 100) / 100;
+function stripeFeeCents(totalCents) {
+  return Math.round(totalCents * STRIPE_RATE) + STRIPE_FIXED_CENTS;
+}
+
+// Extra that pays Stripe's fee on the whole payment (tip + aid + this extra),
+// so neither the tip nor the aid amount is reduced by it.
+function coverCents(tipCents, aidCents) {
+  let cover = stripeFeeCents(tipCents + aidCents);
+  while (cover < stripeFeeCents(tipCents + aidCents + cover)) {
+    cover += 1;
+  }
+  return cover;
+}
+
+function defaultAidCents(tipCents) {
+  return Math.round(tipCents * AID_RATE);
+}
+
+// Where every cent of a payment goes. Stripe's fee comes out of the support
+// amount first; only a shortfall comes out of the vet's tip.
+function splitCents(tipCents, supportCents) {
+  const total = tipCents + supportCents;
+  const fee = stripeFeeCents(total);
+  if (supportCents >= fee) {
+    return { total: total, fee: fee, vet: tipCents, us: supportCents - fee };
+  }
+  return { total: total, fee: fee, vet: tipCents - (fee - supportCents), us: 0 };
+}
+
+function centsToDollars(cents) {
+  return formatCurrency(cents / 100);
+}
+
+function feeLabel() {
+  return (STRIPE_RATE * 100).toFixed(1).replace(/\.0$/, "") + "% + " + STRIPE_FIXED_CENTS + "¢";
 }
 
 function renderPayment() {
@@ -23,8 +56,9 @@ function renderPayment() {
       '</div>' +
     '</div>' +
     '<div class="amount-entry">' +
-      '<div class="amount-display">' +
-        '<span class="amount-currency">$</span>' +
+      '<label class="field-label" for="amount-input">Your tip</label>' +
+      '<div class="money-box amount-box">' +
+        '<span class="money-prefix">$</span>' +
         '<input type="number" id="amount-input" class="amount-input" min="1" step="1" value="1" inputmode="decimal">' +
       '</div>' +
       '<div class="amount-chips">' +
@@ -32,198 +66,226 @@ function renderPayment() {
         '<button type="button" class="amount-chip" data-amount="5">$5</button>' +
         '<button type="button" class="amount-chip" data-amount="10">$10</button>' +
         '<button type="button" class="amount-chip" data-amount="20">$20</button>' +
+        '<button type="button" class="amount-chip" id="custom-chip">Custom</button>' +
       '</div>' +
       '<div class="donation-row">' +
         '<label>' +
           '<input type="checkbox" id="donation-checkbox" checked>' +
-          ' Also chip in <span id="donation-amount-display"></span> to support Tip a Vet' +
+          '<span>Cover the fees (<span id="donation-amount-display"></span> extra) so your whole tip reaches ' + escapeHtml(CURRENT_VET.name) + '</span>' +
         '</label>' +
-        '<input type="number" id="donation-amount-input" min="0" step="0.01">' +
       '</div>' +
-      '<div class="fee-breakdown">' +
-        '<div class="fee-row"><span>Vet gets</span><span id="fee-amount"></span></div>' +
-        '<div class="fee-row"><span>Support Tip a Vet</span><span id="fee-fee"></span></div>' +
-        '<div class="fee-row fee-total"><span>Total</span><span id="fee-total"></span></div>' +
+      '<div class="donation-row aid-row">' +
+        '<label>' +
+          '<input type="checkbox" id="aid-checkbox" checked>' +
+          '<span>Help keep Tip a Vet going.</span>' +
+        '</label>' +
+        '<div class="money-box aid-box">' +
+          '<span class="money-prefix">$</span>' +
+          '<input type="number" id="aid-input" class="aid-input" min="0" step="0.01" inputmode="decimal" aria-label="Amount to help Tip a Vet, in dollars">' +
+        '</div>' +
+        '<p class="field-hint">Starts at 3% of your tip. Change it to any amount.</p>' +
+      '</div>' +
+      '<div class="fee-breakdown" aria-live="polite">' +
+        '<div class="fee-row fee-total"><span>You pay</span><span id="fee-total"></span></div>' +
+        '<div class="fee-row"><span>To ' + escapeHtml(CURRENT_VET.name) + '</span><span id="fee-vet"></span></div>' +
+        '<div class="fee-row"><span>Fees (' + feeLabel() + ')</span><span id="fee-stripe"></span></div>' +
+        '<div class="fee-row"><span>To Tip a Vet</span><span id="fee-us"></span></div>' +
+        '<p class="fee-explain" id="fee-explain"></p>' +
       '</div>' +
       '<div class="note-field">' +
-        '<label for="tip-note">Add a note (optional)</label>' +
-        '<input type="text" id="tip-note" placeholder="For your service 🇺🇸" maxlength="60">' +
+        '<label for="tip-note">Note to ' + escapeHtml(CURRENT_VET.name) + ' (optional)</label>' +
+        '<input type="text" id="tip-note" placeholder="Thank you for your service" maxlength="60">' +
       '</div>' +
     '</div>' +
-    '<button type="button" id="send-button" class="confirm-button">Send</button>';
+    '<p class="payment-error" id="payment-error" role="alert" hidden></p>' +
+    '<button type="button" id="send-button" class="confirm-button">Send</button>' +
+    '<p class="payment-fineprint">Tip a Vet collects every tip and pays the total to ' +
+      escapeHtml(CURRENT_VET.name) + ' when the period ends.</p>';
 
   setUpPaymentFlow(CURRENT_VET);
 }
 
-function updateFeeBreakdown(amount, donationAmount, donationChecked) {
-  const valid = amount && amount > 0;
-  const effectiveDonation = donationChecked ? donationAmount : 0;
-  const total = valid ? amount + effectiveDonation : 0;
+function updateFeeBreakdown(vet, tipCents, aidCents, coverOn) {
+  const valid = tipCents >= MIN_TIP_CENTS;
+  const cover = valid && coverOn ? coverCents(tipCents, aidCents) : 0;
+  const supportCents = valid ? aidCents + cover : 0;
+  const split = splitCents(valid ? tipCents : 0, supportCents);
 
-  document.getElementById("fee-amount").textContent = valid ? formatCurrency(amount) : formatCurrency(0);
-  document.getElementById("fee-fee").textContent = "+" + formatCurrency(effectiveDonation);
-  document.getElementById("fee-total").textContent = valid ? formatCurrency(total) : formatCurrency(0);
-  document.getElementById("donation-amount-display").textContent = formatCurrency(donationAmount);
+  document.getElementById("fee-total").textContent = centsToDollars(split.total);
+  document.getElementById("fee-vet").textContent = centsToDollars(split.vet);
+  document.getElementById("fee-stripe").textContent = centsToDollars(split.fee);
+  document.getElementById("fee-us").textContent = centsToDollars(split.us);
+  document.getElementById("donation-amount-display").textContent =
+    centsToDollars(coverCents(valid ? tipCents : MIN_TIP_CENTS, valid ? aidCents : 0));
+
+  let explain;
+  if (!valid) {
+    explain = "The smallest tip is $1.";
+  } else if (split.vet === tipCents && split.us > 0) {
+    explain = escapeHtml(vet.name) + " gets your full " + centsToDollars(tipCents) +
+      ". The fees are paid from the extra, and Tip a Vet keeps " + centsToDollars(split.us) + ".";
+  } else if (split.vet === tipCents) {
+    explain = escapeHtml(vet.name) + " gets your full " + centsToDollars(tipCents) +
+      ". The extra pays the fees exactly, and Tip a Vet keeps nothing.";
+  } else {
+    explain = "The fees come out of the tip, so " + escapeHtml(vet.name) + " gets " + centsToDollars(split.vet) +
+      " of your " + centsToDollars(tipCents) + ". Tip a Vet keeps nothing.";
+  }
+  document.getElementById("fee-explain").innerHTML = explain;
 
   const sendButton = document.getElementById("send-button");
-  sendButton.textContent = valid ? "Send " + formatCurrency(total) : "Send";
+  sendButton.textContent = valid ? "Pay " + centsToDollars(split.total) : "Send";
   sendButton.disabled = !valid;
+  return supportCents;
 }
 
 function setUpPaymentFlow(vet) {
   const amountInput = document.getElementById("amount-input");
   const chips = document.querySelectorAll(".amount-chip");
   const donationCheckbox = document.getElementById("donation-checkbox");
-  const donationInput = document.getElementById("donation-amount-input");
+  const aidInput = document.getElementById("aid-input");
+  const aidCheckbox = document.getElementById("aid-checkbox");
+  const customChip = document.getElementById("custom-chip");
   const noteInput = document.getElementById("tip-note");
   const sendButton = document.getElementById("send-button");
+  const errorBox = document.getElementById("payment-error");
 
-  let donationManuallyEdited = false;
+  let aidManuallyEdited = false;
 
-  function selectChipFor(amount) {
+  function selectChipFor(tipCents) {
+    let presetMatched = false;
     chips.forEach(function (chip) {
-      chip.classList.toggle("selected", Number(chip.dataset.amount) === amount);
+      const matches = chip !== customChip && Number(chip.dataset.amount) * 100 === tipCents;
+      presetMatched = presetMatched || matches;
+      chip.classList.toggle("selected", matches);
     });
+    customChip.classList.toggle("selected", !presetMatched);
   }
 
-  function currentDonationAmount(tipAmount) {
-    if (donationManuallyEdited) {
-      return roundToCents(Number(donationInput.value) || 0);
+  function currentAidCents(tipCents) {
+    if (!aidCheckbox.checked) {
+      return 0;
     }
-    return roundToCents(tipAmount * DONATION_RATE);
+    if (aidManuallyEdited) {
+      return Math.max(0, Math.round((Number(aidInput.value) || 0) * 100));
+    }
+    return defaultAidCents(tipCents);
+  }
+
+  function currentSupportCents() {
+    const tipCents = Math.round((Number(amountInput.value) || 0) * 100);
+    const aidCents = currentAidCents(tipCents);
+    return aidCents + (donationCheckbox.checked && tipCents >= MIN_TIP_CENTS ? coverCents(tipCents, aidCents) : 0);
   }
 
   function refresh() {
-    const amount = roundToCents(Number(amountInput.value));
-    const donationAmount = currentDonationAmount(amount);
-    if (!donationManuallyEdited) {
-      donationInput.value = donationAmount;
+    const tipCents = Math.round((Number(amountInput.value) || 0) * 100);
+    if (!aidManuallyEdited) {
+      aidInput.value = (defaultAidCents(tipCents) / 100).toFixed(2);
     }
-    selectChipFor(amount);
-    updateFeeBreakdown(amount, donationAmount, donationCheckbox.checked);
+    selectChipFor(tipCents);
+    updateFeeBreakdown(vet, tipCents, currentAidCents(tipCents), donationCheckbox.checked);
   }
 
   refresh();
 
   chips.forEach(function (chip) {
+    if (chip === customChip) {
+      return;
+    }
     chip.addEventListener("click", function () {
       amountInput.value = Number(chip.dataset.amount);
       refresh();
     });
   });
 
+  customChip.addEventListener("click", function () {
+    amountInput.focus();
+    amountInput.select();
+  });
+
   amountInput.addEventListener("input", refresh);
 
-  donationInput.addEventListener("input", function () {
-    donationManuallyEdited = true;
+  aidInput.addEventListener("input", function () {
+    aidManuallyEdited = true;
+    aidCheckbox.checked = true;
     refresh();
   });
+
+  aidCheckbox.addEventListener("change", refresh);
 
   donationCheckbox.addEventListener("change", refresh);
 
   sendButton.addEventListener("click", function () {
-    const amount = roundToCents(Number(amountInput.value));
-    if (!amount || amount <= 0) {
+    const tipCents = Math.round((Number(amountInput.value) || 0) * 100);
+    if (tipCents < MIN_TIP_CENTS) {
       return;
     }
 
-    const rawDonationAmount = donationCheckbox.checked ? currentDonationAmount(amount) : 0;
-    const donationAmount = rawDonationAmount >= MIN_DONATION ? rawDonationAmount : 0;
-    const note = noteInput.value.trim();
-
+    const supportCents = currentSupportCents();
+    errorBox.hidden = true;
     sendButton.disabled = true;
+    sendButton.textContent = "Redirecting to checkout…";
 
-    if (donationAmount > 0) {
-      sendButton.textContent = "Redirecting to checkout…";
-      const returnUrl = window.location.origin + window.location.pathname +
-        "#/tip/complete?amount=" + encodeURIComponent(amount) + "&note=" + encodeURIComponent(note);
-
-      fetch(WORKER_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ donationAmount: donationAmount, returnUrl: returnUrl }),
+    fetch(WORKER_BASE_URL + "/create-donation-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tipCents: tipCents,
+        supportCents: supportCents,
+        note: noteInput.value.trim(),
+        vetId: vet.id,
+        vetName: vet.name,
+        returnUrl: window.location.origin + window.location.pathname,
+      }),
+    })
+      .then(function (response) { return response.json(); })
+      .then(function (result) {
+        if (result.error) {
+          throw new Error(result.error);
+        }
+        window.location.href = result.url;
       })
-        .then(function (response) { return response.json(); })
-        .then(function (result) {
-          if (result.error) {
-            throw new Error(result.error);
-          }
-          window.location.href = result.url;
-        })
-        .catch(function (error) {
-          if (confirm("Donation checkout is unavailable right now. Continue and send your tip to " + vet.name + " without it?")) {
-            showHandoffScreen(vet, amount, note);
-          } else {
-            sendButton.disabled = false;
-            sendButton.textContent = "Send";
-          }
-        });
-    } else {
-      showHandoffScreen(vet, amount, note);
-    }
-  });
-}
-
-function venmoWebLink(handle, amount, note) {
-  return "https://venmo.com/" + encodeURIComponent(handle) +
-    "?txn=pay&amount=" + encodeURIComponent(amount) +
-    "&note=" + encodeURIComponent(note || "Tip a Vet");
-}
-
-function cashappWebLink(handle, amount) {
-  return "https://cash.app/$" + encodeURIComponent(handle) + "/" + encodeURIComponent(amount);
-}
-
-function paypalWebLink(handle, amount) {
-  return "https://paypal.me/" + encodeURIComponent(handle) + "/" + encodeURIComponent(amount);
-}
-
-function showHandoffScreen(vet, amount, note) {
-  const content = document.getElementById("payment-content");
-  let links = "";
-
-  if (vet.venmoHandle) {
-    links += '<a class="confirm-button payment-link" target="_blank" href="' + venmoWebLink(vet.venmoHandle, amount, note) + '">Open Venmo</a>';
-  }
-  if (vet.paypalHandle) {
-    links += '<a class="confirm-button payment-link" target="_blank" href="' + paypalWebLink(vet.paypalHandle, amount) + '">Open PayPal</a>';
-  }
-  if (vet.cashappHandle) {
-    links += '<a class="confirm-button payment-link" target="_blank" href="' + cashappWebLink(vet.cashappHandle, amount) + '">Open Cash App</a>';
-  }
-
-  content.innerHTML =
-    '<div class="payment-success-panel">' +
-      avatarMarkup(vet.id, "avatar-large") +
-      '<h2>Almost there</h2>' +
-      '<p>Send ' + formatCurrency(amount) + ' to ' + escapeHtml(vet.name) + ' using one of the links below.</p>' +
-      links +
-      '<button type="button" id="confirm-sent-button" class="confirm-button">I sent it</button>' +
-    '</div>';
-
-  document.getElementById("confirm-sent-button").addEventListener("click", function () {
-    content.innerHTML =
-      '<div class="payment-success-panel">' +
-        avatarMarkup(vet.id, "avatar-large") +
-        '<h2>Sent! 🎉</h2>' +
-        '<p>' + escapeHtml(vet.name) + ' just got ' + formatCurrency(amount) + ' from you' +
-        (note ? ' &mdash; &ldquo;' + escapeHtml(note) + '&rdquo;' : '') + '.</p>' +
-        '<a class="confirm-button payment-link" href="#/">Back home</a>' +
-      '</div>';
+      .catch(function () {
+        errorBox.textContent = "Checkout is unavailable right now, and you haven't been charged. Please try again in a minute.";
+        errorBox.hidden = false;
+        refresh();
+      });
   });
 }
 
 function renderPaymentComplete(queryString) {
-  const params = new URLSearchParams(queryString);
-  const amount = roundToCents(Number(params.get("amount")));
-  const note = params.get("note") || "";
-
+  const sessionId = new URLSearchParams(queryString).get("session_id") || "";
   const content = document.getElementById("payment-content");
 
-  if (!CURRENT_VET || !amount || amount <= 0) {
-    content.innerHTML = "<p>Something went wrong loading your tip.</p>";
-    return;
-  }
+  content.innerHTML = '<p>Checking your payment&hellip;</p>';
 
-  showHandoffScreen(CURRENT_VET, amount, note);
+  fetch(WORKER_BASE_URL + "/session-status?id=" + encodeURIComponent(sessionId))
+    .then(function (response) { return response.json(); })
+    .then(function (result) {
+      if (result.error || !result.paid) {
+        throw new Error("not paid");
+      }
+      const split = splitCents(result.tipCents, result.supportCents);
+      const vetName = result.vetName || "this period's vet";
+      content.innerHTML =
+        '<div class="payment-success-panel">' +
+          (CURRENT_VET ? avatarMarkup(CURRENT_VET.id, "avatar-large") : '') +
+          '<h2>Thank you!</h2>' +
+          '<p>You paid ' + centsToDollars(split.total) + '. About ' + centsToDollars(split.vet) + ' of it goes to ' +
+            escapeHtml(vetName) + ' when the period ends' +
+            (result.note ? ', with your note &ldquo;' + escapeHtml(result.note) + '&rdquo;' : '') + '.</p>' +
+          '<p class="payment-fineprint">Fees (' + feeLabel() + ') were about ' + centsToDollars(split.fee) +
+            '. Tip a Vet kept ' + centsToDollars(split.us) + '. You&rsquo;ll get a receipt by email.</p>' +
+          '<a class="confirm-button payment-link" href="#/">Back home</a>' +
+        '</div>';
+    })
+    .catch(function () {
+      content.innerHTML =
+        '<div class="payment-success-panel">' +
+          '<h2>We couldn&rsquo;t confirm a payment</h2>' +
+          '<p>You haven&rsquo;t been charged for this visit. If you think you were, check your email for a receipt.</p>' +
+          '<a class="confirm-button payment-link" href="#/tip">Try again</a>' +
+        '</div>';
+    });
 }

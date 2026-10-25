@@ -40,7 +40,7 @@ body {
   box-shadow: 0 3px 0 var(--color-red);
 }
 
-h1, h2, h3, .amount-currency, .amount-input {
+h1, h2, h3 {
   font-family: "Bevan", Georgia, "Times New Roman", serif;
   font-weight: 400;
   letter-spacing: 0.01em;
@@ -227,12 +227,64 @@ h1, h2, h3, .amount-currency, .amount-input {
   margin-bottom: 1.5rem;
 }
 
-.amount-display {
+.field-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-navy);
+  margin-bottom: 0.35rem;
+}
+
+.money-box {
   display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.15rem;
-  margin-bottom: 1.25rem;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid var(--color-tan);
+  border-radius: 0.75rem;
+  padding: 0 0.75rem;
+  cursor: text;
+}
+
+.money-box:focus-within {
+  border-color: var(--color-red);
+  box-shadow: 0 0 0 3px rgba(198, 31, 38, 0.2);
+}
+
+.money-prefix {
+  color: var(--color-navy);
+  font-weight: 700;
+}
+
+.amount-box {
+  max-width: 10rem;
+  margin-bottom: 0.75rem;
+}
+
+.aid-row .aid-box {
+  margin-left: 1.6rem;
+}
+
+.aid-box {
+  max-width: 10rem;
+}
+
+.aid-input {
+  width: 100%;
+  border: none;
+  background: none;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-navy);
+  padding: 0.55rem 0 0.55rem 0.25rem;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.field-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin-top: 0.35rem;
 }
 
 .amount-currency {
@@ -242,14 +294,15 @@ h1, h2, h3, .amount-currency, .amount-input {
 }
 
 .amount-input {
-  width: 6rem;
-  max-width: 100%;
+  font-family: inherit;
+  width: 100%;
   border: none;
   background: none;
-  font-size: 3.5rem;
-  font-weight: 800;
+  font-size: 1.1rem;
+  font-weight: 600;
   color: var(--color-navy);
   text-align: left;
+  padding: 0.55rem 0 0.55rem 0.25rem;
   appearance: textfield;
   -moz-appearance: textfield;
 }
@@ -260,14 +313,15 @@ h1, h2, h3, .amount-currency, .amount-input {
   margin: 0;
 }
 
-.amount-input:focus {
+.amount-input:focus,
+.aid-input:focus {
   outline: none;
 }
 
 .amount-chips {
   display: flex;
   gap: 0.5rem;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
   margin-bottom: 1.25rem;
 }
@@ -631,4 +685,68 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 
 @media (max-width: 640px) {
   .brand-logo { height: 40px; }
+}
+
+.fee-explain {
+  font-size: 0.85rem;
+  color: var(--color-text);
+  line-height: 1.4;
+  margin-top: 0.6rem;
+}
+
+.payment-error {
+  color: var(--color-red-dark);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.payment-fineprint {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin-top: 0.85rem;
+  text-align: center;
+}
+
+.donation-row .money-box input[type="number"] {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  background: none;
+  padding: 0.55rem 0 0.55rem 0.25rem;
+}
+
+.demo-strip {
+  background-color: var(--color-red);
+  color: #ffffff;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+}
+
+.demo-dialog {
+  border: none;
+  border-top: 6px solid var(--color-red);
+  border-radius: 1rem;
+  padding: 1.75rem 1.5rem;
+  max-width: 420px;
+  width: calc(100% - 2rem);
+  margin: auto;
+  color: var(--color-text);
+  box-shadow: 0 10px 40px rgba(11, 22, 56, 0.4);
+}
+
+.demo-dialog::backdrop {
+  background: rgba(11, 22, 56, 0.6);
+}
+
+.demo-dialog h2 {
+  color: var(--color-navy);
+  margin-bottom: 0.75rem;
+}
+
+.demo-dialog p {
+  line-height: 1.5;
+  margin-bottom: 0.85rem;
 }
