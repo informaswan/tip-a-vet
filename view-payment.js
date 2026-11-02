@@ -47,16 +47,20 @@ function renderPayment() {
     return;
   }
 
+  const org = Boolean(CURRENT_VET.isOrg);
+
   content.innerHTML =
-    '<div class="payment-vet-summary">' +
-      avatarMarkup(CURRENT_VET.id, "avatar") +
-      '<div>' +
-        '<h2 class="veteran-name">' + escapeHtml(CURRENT_VET.name) + '</h2>' +
-        '<p class="veteran-meta">' + escapeHtml(CURRENT_VET.branch) + ' &middot; ' + escapeHtml(CURRENT_VET.era) + '</p>' +
-      '</div>' +
-    '</div>' +
+    (org
+      ? '<div class="payment-vet-summary"><h2 class="veteran-name">Donate to Tip a Vet</h2></div>'
+      : '<div class="payment-vet-summary">' +
+          avatarMarkup(CURRENT_VET.id, "avatar") +
+          '<div>' +
+            '<h2 class="veteran-name">' + escapeHtml(CURRENT_VET.name) + '</h2>' +
+            '<p class="veteran-meta">' + escapeHtml(CURRENT_VET.branch) + ' &middot; ' + escapeHtml(CURRENT_VET.era) + '</p>' +
+          '</div>' +
+        '</div>') +
     '<div class="amount-entry">' +
-      '<label class="field-label" for="amount-input">Your tip</label>' +
+      '<label class="field-label" for="amount-input">' + (org ? 'Your donation' : 'Your tip') + '</label>' +
       '<div class="money-box amount-box">' +
         '<span class="money-prefix">$</span>' +
         '<input type="number" id="amount-input" class="amount-input" min="1" step="1" value="1" inputmode="decimal">' +
@@ -71,10 +75,10 @@ function renderPayment() {
       '<div class="donation-row">' +
         '<label>' +
           '<input type="checkbox" id="donation-checkbox" checked>' +
-          '<span>Cover the fees (<span id="donation-amount-display"></span> extra) so your whole tip reaches ' + escapeHtml(CURRENT_VET.name) + '</span>' +
+          '<span>Cover the fees (<span id="donation-amount-display"></span> extra) so your whole ' + (org ? 'donation' : 'tip') + ' reaches ' + escapeHtml(CURRENT_VET.name) + '</span>' +
         '</label>' +
       '</div>' +
-      '<div class="donation-row aid-row">' +
+      '<div class="donation-row aid-row"' + (org ? ' hidden' : '') + '>' +
         '<label>' +
           '<input type="checkbox" id="aid-checkbox" checked>' +
           '<span>Help keep Tip a Vet going.</span>' +
@@ -89,18 +93,19 @@ function renderPayment() {
         '<div class="fee-row fee-total"><span>You pay</span><span id="fee-total"></span></div>' +
         '<div class="fee-row"><span>To ' + escapeHtml(CURRENT_VET.name) + '</span><span id="fee-vet"></span></div>' +
         '<div class="fee-row"><span>Fees (' + feeLabel() + ')</span><span id="fee-stripe"></span></div>' +
-        '<div class="fee-row"><span>To Tip a Vet</span><span id="fee-us"></span></div>' +
+        '<div class="fee-row"' + (org ? ' hidden' : '') + '><span>To Tip a Vet</span><span id="fee-us"></span></div>' +
         '<p class="fee-explain" id="fee-explain"></p>' +
       '</div>' +
       '<div class="note-field">' +
         '<label for="tip-note">Note to ' + escapeHtml(CURRENT_VET.name) + ' (optional)</label>' +
-        '<input type="text" id="tip-note" placeholder="Thank you for your service" maxlength="60">' +
+        '<input type="text" id="tip-note" placeholder="' + (org ? 'Leave us a message' : 'Thank you for your service') + '" maxlength="60">' +
       '</div>' +
     '</div>' +
     '<p class="payment-error" id="payment-error" role="alert" hidden></p>' +
     '<button type="button" id="send-button" class="confirm-button">Send</button>' +
-    '<p class="payment-fineprint">Tip a Vet collects every tip and pays the total to ' +
-      escapeHtml(CURRENT_VET.name) + ' when the period ends.</p>';
+    '<p class="payment-fineprint">' + (org
+      ? 'Your donation goes to Tip a Vet to support our work helping veterans in need.'
+      : 'Tip a Vet collects every tip and pays the total to ' + escapeHtml(CURRENT_VET.name) + ' when the period ends.') + '</p>';
 
   setUpPaymentFlow(CURRENT_VET);
 }
@@ -119,7 +124,11 @@ function updateFeeBreakdown(vet, tipCents, aidCents, coverOn) {
     centsToDollars(coverCents(valid ? tipCents : MIN_TIP_CENTS, valid ? aidCents : 0));
 
   let explain;
-  if (!valid) {
+  if (vet.isOrg && valid) {
+    explain = split.vet === tipCents
+      ? "Tip a Vet gets your full " + centsToDollars(tipCents) + ". The extra covers the card fees."
+      : "Card fees come out of your donation, so Tip a Vet gets " + centsToDollars(split.vet) + " of your " + centsToDollars(tipCents) + ".";
+  } else if (!valid) {
     explain = "The smallest tip is $1.";
   } else if (split.vet === tipCents && split.us > 0) {
     explain = escapeHtml(vet.name) + " gets your full " + centsToDollars(tipCents) +
@@ -163,7 +172,7 @@ function setUpPaymentFlow(vet) {
   }
 
   function currentAidCents(tipCents) {
-    if (!aidCheckbox.checked) {
+    if (vet.isOrg || !aidCheckbox.checked) {
       return 0;
     }
     if (aidManuallyEdited) {
@@ -268,15 +277,20 @@ function renderPaymentComplete(queryString) {
       }
       const split = splitCents(result.tipCents, result.supportCents);
       const vetName = result.vetName || "this period's vet";
+      const toOrg = vetName === "Tip a Vet";
       content.innerHTML =
         '<div class="payment-success-panel">' +
-          (CURRENT_VET ? avatarMarkup(CURRENT_VET.id, "avatar-large") : '') +
+          (CURRENT_VET && !CURRENT_VET.isOrg ? avatarMarkup(CURRENT_VET.id, "avatar-large") : '') +
           '<h2>Thank you!</h2>' +
-          '<p>You paid ' + centsToDollars(split.total) + '. About ' + centsToDollars(split.vet) + ' of it goes to ' +
-            escapeHtml(vetName) + ' when the period ends' +
-            (result.note ? ', with your note &ldquo;' + escapeHtml(result.note) + '&rdquo;' : '') + '.</p>' +
-          '<p class="payment-fineprint">Fees (' + feeLabel() + ') were about ' + centsToDollars(split.fee) +
-            '. Tip a Vet kept ' + centsToDollars(split.us) + '. You&rsquo;ll get a receipt by email.</p>' +
+          (toOrg
+            ? '<p>You donated ' + centsToDollars(split.total) + ' to Tip a Vet. Thank you for helping us help veterans in need.</p>' +
+              '<p class="payment-fineprint">Card fees (' + feeLabel() + ') were about ' + centsToDollars(split.fee) +
+                '. You&rsquo;ll get a receipt by email.</p>'
+            : '<p>You paid ' + centsToDollars(split.total) + '. About ' + centsToDollars(split.vet) + ' of it goes to ' +
+                escapeHtml(vetName) + ' when the period ends' +
+                (result.note ? ', with your note &ldquo;' + escapeHtml(result.note) + '&rdquo;' : '') + '.</p>' +
+              '<p class="payment-fineprint">Fees (' + feeLabel() + ') were about ' + centsToDollars(split.fee) +
+                '. Tip a Vet kept ' + centsToDollars(split.us) + '. You&rsquo;ll get a receipt by email.</p>') +
           '<a class="confirm-button payment-link" href="#/">Back home</a>' +
         '</div>';
     })

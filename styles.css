@@ -716,37 +716,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   padding: 0.55rem 0 0.55rem 0.25rem;
 }
 
-.demo-strip {
-  background-color: var(--color-red);
-  color: #ffffff;
-  text-align: center;
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 0.4rem 1rem;
-}
-
-.demo-dialog {
-  border: none;
-  border-top: 6px solid var(--color-red);
-  border-radius: 1rem;
-  padding: 1.75rem 1.5rem;
-  max-width: 420px;
-  width: calc(100% - 2rem);
-  margin: auto;
-  color: var(--color-text);
-  box-shadow: 0 10px 40px rgba(11, 22, 56, 0.4);
-}
-
-.demo-dialog::backdrop {
-  background: rgba(11, 22, 56, 0.6);
-}
-
-.demo-dialog h2 {
-  color: var(--color-navy);
-  margin-bottom: 0.75rem;
-}
-
-.demo-dialog p {
-  line-height: 1.5;
-  margin-bottom: 0.85rem;
+.donation-row[hidden],
+.fee-row[hidden] {
+  display: none;
 }

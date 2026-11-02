@@ -88,8 +88,13 @@ async function createSession(request, env, origin) {
   const params = new URLSearchParams();
   params.set("mode", "payment");
   params.set("line_items[0][price_data][currency]", "usd");
-  params.set("line_items[0][price_data][product_data][name]", "Tip for " + (vetName || "this period's vet"));
-  params.set("line_items[0][price_data][product_data][description]", "Paid out to the veteran at the end of the period, minus card fees.");
+  if (vetId === "tip-a-vet") {
+    params.set("line_items[0][price_data][product_data][name]", "Donation to Tip a Vet");
+    params.set("line_items[0][price_data][product_data][description]", "Supports Tip a Vet's work helping veterans in need.");
+  } else {
+    params.set("line_items[0][price_data][product_data][name]", "Tip for " + (vetName || "this period's vet"));
+    params.set("line_items[0][price_data][product_data][description]", "Paid out to the veteran at the end of the period, minus card fees.");
+  }
   params.set("line_items[0][price_data][unit_amount]", String(tipCents));
   params.set("line_items[0][quantity]", "1");
   if (supportCents > 0) {
