@@ -31,7 +31,7 @@ function renderHome() {
       '<section class="featured-vets">' +
         '<h3>Who we are</h3>' +
         '<div class="profile-content">' +
-          '<p class="veteran-bio">Tip a Vet was founded by <strong>Ronald Hammock</strong>, a veteran who served in the U.S. Navy.</p>' +
+          '<p class="veteran-bio">Tip a Vet was founded by <strong>Ronald Hammack</strong>, a veteran who served in the U.S. Navy.</p>' +
           '<p class="veteran-bio"><strong>Michael Swanson</strong> and <strong>Samual Swanson</strong> helped build the website and set everything up. ' +
           'Michael served in the U.S. Air Force, and Sam served in the U.S. Coast Guard.</p>' +
           '<p class="veteran-bio">We want your support to keep Tip a Vet going. We would love to serve more veterans, especially those who are less fortunate. Help us get this going.</p>' +
